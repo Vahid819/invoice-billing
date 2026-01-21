@@ -17,6 +17,13 @@ const UserSchema = new mongoose.Schema(
             maxlength: 50,
         },
 
+        businessName: {
+            type: String,
+            trim: true,
+            minlength: 2,
+            maxlength: 100,
+        },
+
         email: {
             type: String,
             required: [true, "Email is required"],
@@ -33,6 +40,10 @@ const UserSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, "Password is required"],
+            match: [
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
+                "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+            ],
             minlength: 6,
             select: false, // IMPORTANT: hide password by default
         },
