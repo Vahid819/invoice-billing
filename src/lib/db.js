@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const MONGODB_URL = process.env.MONGODB_URL;
+const MONGODB_URL = process.env.MONGODB_URI;
 
 if (!MONGODB_URL) {
-  throw new Error("❌ MONGODB_URL is not defined");
+  throw new Error("❌ MONGODB_URI is not defined");
 }
 
 // Global cache (Next.js / serverless safe)

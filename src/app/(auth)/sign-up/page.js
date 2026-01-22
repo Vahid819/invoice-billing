@@ -30,7 +30,9 @@ import {
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
+  const [otpVerified, setOtpVerified] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState("")
   const [errors, setErrors] = useState({})
 
   const [form, setForm] = useState({
@@ -43,14 +45,67 @@ export default function SignupPage() {
   })
 
   const handleChange = (e) => {
+    setErrors({})
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // 🔹 SEND OTP
+  const handleSendOtp = async () => {
+    setLoading(true)
+    setMessage("")
+
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.email,
+        name: form.name,
+      }),
+    })
+
+    const data = await res.json()
+    setLoading(false)
+
+    if (!res.ok) {
+      setMessage(data.message || "Failed to send OTP")
+      return
+    }
+
+    setOtpSent(true)
+    setMessage("OTP sent to your email")
+  }
+
+  // 🔹 VERIFY OTP
+  const handleVerifyOtp = async () => {
+    setLoading(true)
+    setMessage("")
+
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.email,
+        otp: form.otp,
+      }),
+    })
+
+    const data = await res.json()
+    setLoading(false)
+
+    if (!res.ok) {
+      setMessage(data.message || "OTP verification failed")
+      return
+    }
+
+    setOtpVerified(true)
+    setMessage("OTP verified successfully")
+  }
+
+  // 🔹 FINAL SIGNUP
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrors({})
 
-    // ✅ Zod validation
     const parsed = signupSchema.safeParse(form)
     if (!parsed.success) {
       setErrors(parsed.error.flatten().fieldErrors)
@@ -69,7 +124,7 @@ export default function SignupPage() {
       if (!res.ok) {
         setErrors({ general: data.message })
       } else {
-        alert("Account created successfully")
+        alert("Account created successfully 🎉")
       }
     } catch {
       setErrors({ general: "Server error" })
@@ -79,41 +134,24 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="
-  relative min-h-screen flex items-center justify-center px-4
-  bg-linear-to-br from-zinc-100 via-white to-zinc-200
-  dark:from-zinc-950 dark:via-zinc-900 dark:to-black
-  overflow-hidden
-">
-      {/* Cinematic light effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-125 h-125 bg-purple-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-[-15%] right-[-10%] w-150 h-150 bg-indigo-500/20 rounded-full blur-3xl" />
-      <div className="absolute top-[30%] right-[20%] w-75 h-75 bg-pink-500/10 rounded-full blur-3xl" />
+    <div className="relative min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-zinc-100 via-white to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black overflow-hidden">
 
+      {/* Cinematic lights */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[28rem] h-[28rem] bg-indigo-500/20 rounded-full blur-3xl" />
 
-      <Card className="
-    w-full max-w-md
-    rounded-2xl
-    bg-white/70 dark:bg-zinc-900/60
-    backdrop-blur-xl
-    border border-white/20 dark:border-white/10
-    shadow-2xl shadow-black/10
-  ">
+      <Card className="w-full max-w-md rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle>
-            Create Your Billing & Invoice Account
-          </CardTitle>
-
+          <CardTitle>Create Your Billing & Invoice Account</CardTitle>
           <CardDescription>
-            Manage clients, generate GST-ready invoices, and track payments — all in one place.
+            Manage clients, generate GST invoices, and track payments easily.
           </CardDescription>
-
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* First Name */}
+            {/* Name */}
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldLabel>First Name</FieldLabel>
@@ -131,11 +169,11 @@ export default function SignupPage() {
               </Field>
             </div>
 
-            {/* Business Name */}
+            {/* Business */}
             <Field>
               <FieldLabel>Business Name</FieldLabel>
               <FieldContent>
-                <Input name="businessName" onChange={handleChange} placeholder="jonhill industry" />
+                <Input name="businessName" onChange={handleChange} placeholder="Jonah Hill Industries" />
               </FieldContent>
               <FieldError>{errors.businessName?.[0]}</FieldError>
             </Field>
@@ -144,10 +182,16 @@ export default function SignupPage() {
             <Field>
               <FieldLabel>Email</FieldLabel>
               <FieldContent className="flex gap-2">
-                <Input name="email" type="email" onChange={handleChange} placeholder="jonhill@gmail.com" />
-                {form.email && (
-                  <Button type="button" onClick={() => setOtpSent(true)}>
-                    Send OTP
+                <Input
+                  name="email"
+                  type="email"
+                  onChange={handleChange}
+                  placeholder="jonah@gmail.com"
+                  disabled={otpSent}
+                />
+                {form.email && !otpSent && (
+                  <Button type="button" onClick={handleSendOtp} disabled={loading}>
+                    {loading ? "Sending..." : "Send OTP"}
                   </Button>
                 )}
               </FieldContent>
@@ -165,14 +209,19 @@ export default function SignupPage() {
                     onChange={(v) => setForm({ ...form, otp: v })}
                   >
                     <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map(i => (
+                      {[0,1,2,3,4,5].map(i => (
                         <InputOTPSlot key={i} index={i} />
                       ))}
                     </InputOTPGroup>
                   </InputOTP>
                 </FieldContent>
-                <FieldError>{errors.otp?.[0]}</FieldError>
               </Field>
+            )}
+
+            {otpSent && !otpVerified && (
+              <Button type="button" onClick={handleVerifyOtp} className="w-full">
+                Verify OTP
+              </Button>
             )}
 
             {/* Password */}
@@ -183,6 +232,7 @@ export default function SignupPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   onChange={handleChange}
+                  disabled={!otpVerified}
                 />
                 <button
                   type="button"
@@ -195,11 +245,21 @@ export default function SignupPage() {
               <FieldError>{errors.password?.[0]}</FieldError>
             </Field>
 
+            {message && (
+              <p className="text-sm text-center text-muted-foreground">
+                {message}
+              </p>
+            )}
+
             {errors.general && (
               <p className="text-red-500 text-center">{errors.general}</p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!otpVerified || loading}
+            >
               {loading ? "Creating..." : "Create Account"}
             </Button>
           </form>
