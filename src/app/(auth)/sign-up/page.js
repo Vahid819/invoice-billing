@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { signupSchema } from "@/schemas/userSignupSchema"
 import {
   Card,
   CardHeader,
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import {
   InputOTP,
@@ -20,127 +20,200 @@ import {
 } from "@/components/ui/input-otp"
 import { FaEye, FaEyeSlash } from "react-icons/fa"
 import { Chrome } from "lucide-react"
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field"
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
   const [otpSent, setOtpSent] = useState(false)
-  const [otp, setOtp] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  const [form, setForm] = useState({
+    name: "",
+    lastName: "",
+    businessName: "",
+    email: "",
+    otp: "",
+    password: "",
+  })
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setErrors({})
+
+    // ✅ Zod validation
+    const parsed = signupSchema.safeParse(form)
+    if (!parsed.success) {
+      setErrors(parsed.error.flatten().fieldErrors)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setErrors({ general: data.message })
+      } else {
+        alert("Account created successfully")
+      }
+    } catch {
+      setErrors({ general: "Server error" })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-zinc-100 via-white to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black px-4">
-      <Card className="w-full max-w-md backdrop-blur-xl bg-white/70 dark:bg-zinc-900/60 border border-white/20 dark:border-white/10 shadow-2xl rounded-2xl">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-semibold">
-            Create Your Billing Account
+    <div className="
+  relative min-h-screen flex items-center justify-center px-4
+  bg-linear-to-br from-zinc-100 via-white to-zinc-200
+  dark:from-zinc-950 dark:via-zinc-900 dark:to-black
+  overflow-hidden
+">
+      {/* Cinematic light effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-125 h-125 bg-purple-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-150 h-150 bg-indigo-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-[30%] right-[20%] w-75 h-75 bg-pink-500/10 rounded-full blur-3xl" />
+
+
+      <Card className="
+    w-full max-w-md
+    rounded-2xl
+    bg-white/70 dark:bg-zinc-900/60
+    backdrop-blur-xl
+    border border-white/20 dark:border-white/10
+    shadow-2xl shadow-black/10
+  ">
+        <CardHeader className="text-center">
+          <CardTitle>
+            Create Your Billing & Invoice Account
           </CardTitle>
+
           <CardDescription>
-            Verify your email using OTP
+            Manage clients, generate GST-ready invoices, and track payments — all in one place.
           </CardDescription>
+
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          {/* Name */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>First Name</Label>
-              <Input placeholder="Vahid" />
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* First Name */}
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel>First Name</FieldLabel>
+                <FieldContent>
+                  <Input name="name" onChange={handleChange} placeholder="Jonah" />
+                </FieldContent>
+                <FieldError>{errors.name?.[0]}</FieldError>
+              </Field>
+
+              <Field>
+                <FieldLabel>Last Name</FieldLabel>
+                <FieldContent>
+                  <Input name="lastName" onChange={handleChange} placeholder="Hill" />
+                </FieldContent>
+              </Field>
             </div>
-            <div>
-              <Label>Last Name</Label>
-              <Input placeholder="Shaikh" />
-            </div>
-          </div>
 
-          {/* Business */}
-          <div>
-            <Label>Business Name</Label>
-            <Input placeholder="Vahid Enterprises" />
-          </div>
+            {/* Business Name */}
+            <Field>
+              <FieldLabel>Business Name</FieldLabel>
+              <FieldContent>
+                <Input name="businessName" onChange={handleChange} placeholder="jonhill industry" />
+              </FieldContent>
+              <FieldError>{errors.businessName?.[0]}</FieldError>
+            </Field>
 
-          {/* Email + Send OTP */}
-          <div className="space-y-2">
-            <Label>Email</Label>
+            {/* Email */}
+            <Field>
+              <FieldLabel>Email</FieldLabel>
+              <FieldContent className="flex gap-2">
+                <Input name="email" type="email" onChange={handleChange} placeholder="jonhill@gmail.com" />
+                {form.email && (
+                  <Button type="button" onClick={() => setOtpSent(true)}>
+                    Send OTP
+                  </Button>
+                )}
+              </FieldContent>
+              <FieldError>{errors.email?.[0]}</FieldError>
+            </Field>
 
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            {/* OTP */}
+            {otpSent && (
+              <Field>
+                <FieldLabel>OTP</FieldLabel>
+                <FieldContent>
+                  <InputOTP
+                    maxLength={6}
+                    value={form.otp}
+                    onChange={(v) => setForm({ ...form, otp: v })}
+                  >
+                    <InputOTPGroup>
+                      {[0, 1, 2, 3, 4, 5].map(i => (
+                        <InputOTPSlot key={i} index={i} />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                </FieldContent>
+                <FieldError>{errors.otp?.[0]}</FieldError>
+              </Field>
+            )}
 
-              {email && (
-                <Button
+            {/* Password */}
+            <Field>
+              <FieldLabel>Password</FieldLabel>
+              <FieldContent className="relative">
+                <Input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  onChange={handleChange}
+                />
+                <button
                   type="button"
-                  variant="outline"
-                  onClick={() => setOtpSent(true)}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  Send OTP
-                </Button>
-              )}
-            </div>
-          </div>
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </FieldContent>
+              <FieldError>{errors.password?.[0]}</FieldError>
+            </Field>
 
-          {/* OTP using shadcn InputOTP */}
-          {otpSent && (
-            <div className="space-y-2">
-              <Label>OTP</Label>
+            {errors.general && (
+              <p className="text-red-500 text-center">{errors.general}</p>
+            )}
 
-              <InputOTP
-                maxLength={6}
-                value={otp}
-                onChange={(value) => setOtp(value)}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Creating..." : "Create Account"}
+            </Button>
+          </form>
 
-              <p className="text-xs text-muted-foreground">
-                Enter the 6-digit OTP sent to your email
-              </p>
-            </div>
-          )}
-
-          {/* Password */}
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                className="pr-10"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-          </div>
-
-          <Button className="w-full">
-            Create Account
-          </Button>
-
-          <Separator />
+          <Separator className="my-4" />
 
           <Button variant="outline" className="w-full flex gap-2">
             <Chrome className="h-4 w-4" />
             Sign up with Google
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm mt-2">
             Already have an account?{" "}
-            <Link href="/signin" className="text-primary hover:underline">
+            <Link href="/sign-in" className="underline">
               Sign in
             </Link>
           </p>
