@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
 const UserSchema = new mongoose.Schema(
   {
@@ -40,13 +40,9 @@ const UserSchema = new mongoose.Schema(
     },
 
     // 🔐 OTP AUTH FIELDS
-    otpHash: {
-      type: String,
-    },
+    otpHash: String,
 
-    otpExpiresAt: {
-      type: Date,
-    },
+    otpExpiresAt: Date,
 
     otpAttempts: {
       type: Number,
@@ -58,7 +54,7 @@ const UserSchema = new mongoose.Schema(
       default: false,
     },
 
-    // ✅ Account verification (email verified)
+    // ✅ Account verification
     verified: {
       type: Boolean,
       default: false,
@@ -69,15 +65,10 @@ const UserSchema = new mongoose.Schema(
       default: false,
     },
 
-    lastLogin: {
-      type: Date,
-    },
+    lastLogin: Date,
   },
-  {
-    timestamps: true,
-  }
-);
+  { timestamps: true }
+)
 
-// Prevent model overwrite in Next.js
 export default mongoose.models.User ||
-  mongoose.model("User", UserSchema);
+  mongoose.model("User", UserSchema)

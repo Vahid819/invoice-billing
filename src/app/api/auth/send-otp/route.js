@@ -1,10 +1,9 @@
-import { Resend } from "resend"
 import bcrypt from "bcryptjs"
 import { connectDB } from "@/lib/db"
-import User from "../../../../model/User"
-import OtpEmail from "../../../../emails/otpEmail"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import User from "@/model/User"
+import OtpEmail from "@/emails/otpEmail"
+import { gmailTransporter } from "@/lib/mailers/gmail"
+import { render } from "@react-email/render"
 
 export async function POST(req) {
   await connectDB()
@@ -29,15 +28,16 @@ export async function POST(req) {
     { upsert: true }
   )
 
-  // 📧 Send OTP Email
-  await resend.emails.send({
-    from: "Billing App <vahidmomin.dev@gmail.com>",
+  // ✅ FIX IS HERE
+  const html = await render(<OtpEmail name={name || "User"} otp={otp} />)
+
+  await gmailTransporter.sendMail({
+    from: `"Billing App" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: "Your OTP Code",
-    react: <OtpEmail name={name || "User"} otp={otp} />,
+    html,
   })
 
-  // ✅ SUCCESS LOG
   console.log(`✅ OTP email sent successfully to ${email}`)
 
   return Response.json({ message: "OTP sent successfully" })

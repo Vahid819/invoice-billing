@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { signupSchema } from "@/schemas/userSignupSchema"
+
 import {
   Card,
   CardHeader,
@@ -12,22 +14,20 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
+
 import { FaEye, FaEyeSlash } from "react-icons/fa"
 import { Chrome } from "lucide-react"
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
 
 export default function SignupPage() {
+  const router = useRouter()
+
   const [showPassword, setShowPassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
@@ -49,64 +49,92 @@ export default function SignupPage() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  // 🔹 SEND OTP
+  // SEND OTP
   const handleSendOtp = async () => {
-    setLoading(true)
-    setMessage("")
-
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: form.email,
-        name: form.name,
-      }),
-    })
-
-    const data = await res.json()
-    setLoading(false)
-
-    if (!res.ok) {
-      setMessage(data.message || "Failed to send OTP")
+    if (!form.name || !form.email) {
+      setMessage("Please enter name and email first")
       return
     }
 
-    setOtpSent(true)
-    setMessage("OTP sent to your email")
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          name: form.name,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.message || "Failed to send OTP")
+        return
+      }
+
+      setOtpSent(true)
+      setMessage("OTP sent to your email")
+    } catch {
+      setMessage("Server error while sending OTP")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // 🔹 VERIFY OTP
+  // VERIFY OTP
   const handleVerifyOtp = async () => {
-    setLoading(true)
-    setMessage("")
-
-    const res = await fetch("/api/auth/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: form.email,
-        otp: form.otp,
-      }),
-    })
-
-    const data = await res.json()
-    setLoading(false)
-
-    if (!res.ok) {
-      setMessage(data.message || "OTP verification failed")
+    if (!form.otp) {
+      setMessage("Please enter OTP")
       return
     }
 
-    setOtpVerified(true)
-    setMessage("OTP verified successfully")
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          otp: form.otp,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.message || "OTP verification failed")
+        return
+      }
+
+      setOtpVerified(true)
+      setMessage("OTP verified. Create your password.")
+    } catch {
+      setMessage("Server error during OTP verification")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // 🔹 FINAL SIGNUP
+  // FINAL SIGNUP
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrors({})
+    setMessage("")
 
-    const parsed = signupSchema.safeParse(form)
+    if (!otpVerified) {
+      setMessage("Please verify OTP first")
+      return
+    }
+
+    const { otp, ...payload } = form
+
+    const parsed = signupSchema.safeParse(payload)
     if (!parsed.success) {
       setErrors(parsed.error.flatten().fieldErrors)
       return
@@ -121,10 +149,11 @@ export default function SignupPage() {
       })
 
       const data = await res.json()
+
       if (!res.ok) {
         setErrors({ general: data.message })
       } else {
-        alert("Account created successfully 🎉")
+        router.push("/dashboard") // ✅ REDIRECT
       }
     } catch {
       setErrors({ general: "Server error" })
@@ -134,17 +163,17 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-zinc-100 via-white to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-zinc-100 via-white to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black">
 
-      {/* Cinematic lights */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-[-15%] right-[-10%] w-[28rem] h-[28rem] bg-indigo-500/20 rounded-full blur-3xl" />
+      {/* Light effects */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
 
       <Card className="w-full max-w-md rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle>Create Your Billing & Invoice Account</CardTitle>
           <CardDescription>
-            Manage clients, generate GST invoices, and track payments easily.
+            Manage clients, generate invoices, and track payments.
           </CardDescription>
         </CardHeader>
 
@@ -153,56 +182,64 @@ export default function SignupPage() {
 
             {/* Name */}
             <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel>First Name</FieldLabel>
-                <FieldContent>
-                  <Input name="name" onChange={handleChange} placeholder="Jonah" />
-                </FieldContent>
-                <FieldError>{errors.name?.[0]}</FieldError>
-              </Field>
+              <div className="space-y-2">
+                <Label htmlFor="name">First Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Jonah"
+                  onChange={handleChange}
+                />
+                {errors.name && <p className="text-sm text-red-500">{errors.name[0]}</p>}
+              </div>
 
-              <Field>
-                <FieldLabel>Last Name</FieldLabel>
-                <FieldContent>
-                  <Input name="lastName" onChange={handleChange} placeholder="Hill" />
-                </FieldContent>
-              </Field>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Hill"
+                  onChange={handleChange}
+                />
+              </div>
             </div>
 
             {/* Business */}
-            <Field>
-              <FieldLabel>Business Name</FieldLabel>
-              <FieldContent>
-                <Input name="businessName" onChange={handleChange} placeholder="Jonah Hill Industries" />
-              </FieldContent>
-              <FieldError>{errors.businessName?.[0]}</FieldError>
-            </Field>
+            <div className="space-y-2">
+              <Label htmlFor="businessName">Business Name</Label>
+              <Input
+                id="businessName"
+                name="businessName"
+                placeholder="Jonah Hill Industries"
+                onChange={handleChange}
+              />
+            </div>
 
             {/* Email */}
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <FieldContent className="flex gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="flex gap-2">
                 <Input
+                  id="email"
                   name="email"
                   type="email"
-                  onChange={handleChange}
                   placeholder="jonah@gmail.com"
+                  onChange={handleChange}
                   disabled={otpSent}
                 />
-                {form.email && !otpSent && (
+                {!otpSent && (
                   <Button type="button" onClick={handleSendOtp} disabled={loading}>
-                    {loading ? "Sending..." : "Send OTP"}
+                    Send OTP
                   </Button>
                 )}
-              </FieldContent>
-              <FieldError>{errors.email?.[0]}</FieldError>
-            </Field>
+              </div>
+            </div>
 
             {/* OTP */}
             {otpSent && (
-              <Field>
-                <FieldLabel>OTP</FieldLabel>
-                <FieldContent>
+              <>
+                <div className="space-y-2">
+                  <Label>OTP</Label>
                   <InputOTP
                     maxLength={6}
                     value={form.otp}
@@ -214,23 +251,25 @@ export default function SignupPage() {
                       ))}
                     </InputOTPGroup>
                   </InputOTP>
-                </FieldContent>
-              </Field>
-            )}
+                </div>
 
-            {otpSent && !otpVerified && (
-              <Button type="button" onClick={handleVerifyOtp} className="w-full">
-                Verify OTP
-              </Button>
+                {!otpVerified && (
+                  <Button type="button" onClick={handleVerifyOtp} className="w-full">
+                    Verify OTP
+                  </Button>
+                )}
+              </>
             )}
 
             {/* Password */}
-            <Field>
-              <FieldLabel>Password</FieldLabel>
-              <FieldContent className="relative">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
                 <Input
+                  id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  placeholder="Create a strong password"
                   onChange={handleChange}
                   disabled={!otpVerified}
                 />
@@ -241,18 +280,18 @@ export default function SignupPage() {
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
-              </FieldContent>
-              <FieldError>{errors.password?.[0]}</FieldError>
-            </Field>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password[0]}</p>
+              )}
+            </div>
 
             {message && (
-              <p className="text-sm text-center text-muted-foreground">
-                {message}
-              </p>
+              <p className="text-sm text-center text-muted-foreground">{message}</p>
             )}
 
             {errors.general && (
-              <p className="text-red-500 text-center">{errors.general}</p>
+              <p className="text-sm text-center text-red-500">{errors.general}</p>
             )}
 
             <Button
@@ -260,7 +299,7 @@ export default function SignupPage() {
               className="w-full"
               disabled={!otpVerified || loading}
             >
-              {loading ? "Creating..." : "Create Account"}
+              Create Account
             </Button>
           </form>
 
