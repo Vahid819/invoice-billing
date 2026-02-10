@@ -3,7 +3,7 @@ import { withAuth } from "next-auth/middleware"
 export default withAuth(
   function middleware(req) {
     // You can add custom logic here later if needed
-      return NextResponse.next()
+      // return NextResponse.next()
 
 
   },
