@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import AuthSessionProvider from "@/components/providers/session-provider"
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,7 +29,9 @@ export default function RootLayout({ children }) {
           defaultTheme="system"
           enableSystem
         >
-          {children}
+          <AuthSessionProvider>
+            {children}
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 import { connectDB } from "@/lib/db"
-import User from "@/model/User"
+import User from "@/models/User"
 import OtpEmail from "@/emails/otpEmail"
 import { gmailTransporter } from "@/lib/mailers/gmail"
 import { render } from "@react-email/render"

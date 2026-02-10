@@ -1,13 +1,9 @@
 import { z } from "zod"
 
 export const signupSchema = z.object({
-  name: z.string().min(2, "First name required"),
-  lastName: z.string().min(2).optional(),
-  businessName: z.string().min(2, "Business name required"),
+  name: z.string().min(2, "First name is required"),
+  lastName: z.string().optional(),
+  businessName: z.string().optional(),
   email: z.string().email("Invalid email"),
-  otp: z.string().length(6, "OTP must be 6 digits"),
-  password: z.string().regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
-    "Weak password"
-  ),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 })

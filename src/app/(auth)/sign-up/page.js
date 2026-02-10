@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signupSchema } from "@/schemas/userSignupSchema"
+import { useSession } from "next-auth/react"
 
 import {
   Card,
@@ -28,12 +29,22 @@ import { Chrome } from "lucide-react"
 export default function SignupPage() {
   const router = useRouter()
 
+  const { status } = useSession()
   const [showPassword, setShowPassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpVerified, setOtpVerified] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [errors, setErrors] = useState({})
+
+
+// 🔐 Redirect logged-in users
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard")
+    }
+}, [status, router])
 
   const [form, setForm] = useState({
     name: "",
@@ -123,44 +134,53 @@ export default function SignupPage() {
 
   // FINAL SIGNUP
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setErrors({})
-    setMessage("")
+  e.preventDefault()
+  console.log("🔥 handleSubmit called")
 
-    if (!otpVerified) {
-      setMessage("Please verify OTP first")
-      return
-    }
+  setErrors({})
+  setMessage("")
 
-    const { otp, ...payload } = form
-
-    const parsed = signupSchema.safeParse(payload)
-    if (!parsed.success) {
-      setErrors(parsed.error.flatten().fieldErrors)
-      return
-    }
-
-    try {
-      setLoading(true)
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setErrors({ general: data.message })
-      } else {
-        router.push("/dashboard") // ✅ REDIRECT
-      }
-    } catch {
-      setErrors({ general: "Server error" })
-    } finally {
-      setLoading(false)
-    }
+  if (!otpVerified) {
+    setMessage("Please verify OTP first")
+    return
   }
+
+  const { otp, ...payload } = form
+
+  const parsed = signupSchema.safeParse(payload)
+  if (!parsed.success) {
+    console.log("❌ validation failed", parsed.error.flatten())
+    setErrors(parsed.error.flatten().fieldErrors)
+    return
+  }
+
+  try {
+    setLoading(true)
+
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed.data),
+    })
+
+    console.log("📡 signup API called")
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setErrors({ general: data.message })
+      return
+    }
+
+    router.push("/dashboard")
+  } catch (err) {
+    console.error(err)
+    setErrors({ general: "Server error" })
+  } finally {
+    setLoading(false)
+  }
+}
+
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-zinc-100 via-white to-zinc-200 dark:from-zinc-950 dark:via-zinc-900 dark:to-black">
@@ -246,7 +266,7 @@ export default function SignupPage() {
                     onChange={(v) => setForm({ ...form, otp: v })}
                   >
                     <InputOTPGroup>
-                      {[0,1,2,3,4,5].map(i => (
+                      {[0, 1, 2, 3, 4, 5].map(i => (
                         <InputOTPSlot key={i} index={i} />
                       ))}
                     </InputOTPGroup>
@@ -297,10 +317,11 @@ export default function SignupPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={!otpVerified || loading}
+              disabled={loading || !otpVerified}
             >
-              Create Account
+              {loading ? "Creating..." : "Create Account"}
             </Button>
+
           </form>
 
           <Separator className="my-4" />
@@ -312,7 +333,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm mt-2">
             Already have an account?{" "}
-            <Link href="/sign-in" className="underline">
+            <Link href="/login" className="underline">
               Sign in
             </Link>
           </p>
