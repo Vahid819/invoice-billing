@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }) {
         <SidebarProvider>
           <div className="flex min-h-screen w-full overflow-hidden">
             <AppSidebar />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 min-h-screen bg-linear-to-br from-[#061b24] via-[#0b2a36] to-[#061b24]">
               {children}
             </main>
           </div>

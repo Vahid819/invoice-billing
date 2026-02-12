@@ -1,4 +1,6 @@
 import PaymentsTable from "@/components/payments-table"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function DashboardPage() {
   return (
@@ -6,9 +8,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Payments</h1>
-        <button className="px-4 py-2 bg-primary text-white rounded-md">
-          + Create payment
-        </button>
+        <Button className="bg-blue-600 hover:bg-blue-500">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
       </div>
 
       {/* Tabs */}
