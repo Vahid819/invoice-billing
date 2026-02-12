@@ -50,12 +50,20 @@ export default function AppSidebar() {
   if (status === "loading") return null;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      className="
+        bg-white/10
+        backdrop-blur-xl
+        border-r border-white/15
+        shadow-[0_0_60px_rgba(255,255,255,0.08)]
+      "
+    >
       {/* Header */}
       <SidebarHeader>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton className="font-semibold">
+            <SidebarMenuButton className="font-semibold text-white">
               Acme Inc
               <ChevronDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -73,7 +81,8 @@ export default function AppSidebar() {
           <SidebarMenu className="space-y-1">
             {navItems.map((item) => {
               const isActive =
-                pathname === item.href || pathname.startsWith(item.href + "/");
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/");
 
               const Icon = item.icon;
 
@@ -83,18 +92,37 @@ export default function AppSidebar() {
                     asChild
                     isActive={isActive}
                     className="
-                     transition-all duration-300
-                     data-[active=true]:bg-white/10  
-                     data-[active=true]:backdrop-blur-lg
-                     data-[active=true]:border
-                     data-[active=true]:border-white/20
-                     data-[active=true]:shadow-[0_0_25px_rgba(255255,0.15)]
-                     data-[active=true]:text-white
-                     hover:bg-white/5
-                     hover:text-white
-                     "
+                      relative overflow-hidden
+                      transition-all duration-300
+
+                      data-[active=true]:bg-white/20
+                      data-[active=true]:backdrop-blur-xl
+                      data-[active=true]:border
+                      data-[active=true]:border-white/25
+                      data-[active=true]:shadow-[0_8px_30px_rgba(255,255,255,0.25)]
+                      data-[active=true]:text-white
+
+                      hover:bg-white/10
+                      hover:text-white
+                    "
                   >
-                    <Link href={item.href} className="flex items-center gap-3">
+                    <Link
+                      href={item.href}
+                      className="relative z-10 flex items-center gap-3 px-2 py-1"
+                    >
+                      {/* Glass reflection layer */}
+                      <span
+                        className="
+                          pointer-events-none
+                          absolute inset-0 rounded-lg
+                          bg-linear-to-b
+                          from-white/30
+                          to-transparent
+                          opacity-0
+                          data-[active=true]:opacity-100
+                        "
+                      />
+
                       <Icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -107,7 +135,7 @@ export default function AppSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-slate-800 p-2">
+      <SidebarFooter className="border-t border-white/10 p-2">
         <ProfileMenu user={session?.user} />
       </SidebarFooter>
     </Sidebar>
